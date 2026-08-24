@@ -216,6 +216,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
       <label>Restore backup<input id="impFile" type="file" accept=".json,application/json" hidden></label>
     </div>
     <p class="saveline" id="rSave"></p>
+    <p class="saveline">build 2</p>
   </div>
 </div>
 
@@ -821,29 +822,38 @@ function download(name,obj){
 }
 function payload(ms){ return {kind:"uis-checklist",v:3,machines:ms}; }
 
-/* One tap into the OneDrive app. Falls back to a download when the browser
-   cannot share files (desktop, older iOS, unsupported type). */
+/* One tap into the OneDrive app.
+   Tries the real share sheet first; only falls back to a download when the
+   browser has no share support or refuses the file type. */
 async function shareOrDownload(name,obj,noteId){
   const where=document.getElementById(noteId);
   const text=JSON.stringify(obj);
-  try{
-    const f=new File([text],name,{type:"application/json"});
-    if(navigator.canShare&&navigator.canShare({files:[f]})){
-      await navigator.share({files:[f],title:name});
-      where.textContent="Sent \u2014 choose the project folder in OneDrive.";
-      return;
+  const allowed=f=>(typeof navigator.canShare!=="function")||navigator.canShare({files:[f]});
+
+  if(typeof navigator.share==="function"){
+    const attempts=[[name,"application/json"],[name.replace(/\.json$/,".txt"),"text/plain"]];
+    let refused=false;
+    for(const [fname,type] of attempts){
+      let f;
+      try{ f=new File([text],fname,{type:type}); }catch(e){ continue; }
+      if(!allowed(f)){ refused=true; continue; }
+      try{
+        await navigator.share({files:[f],title:fname});
+        where.textContent="Sent as "+fname+" \u2014 choose the project folder in OneDrive.";
+        return;
+      }catch(e){
+        if(e&&e.name==="AbortError"){ where.textContent="Sharing cancelled \u2014 nothing was sent."; return; }
+        refused=true;
+      }
     }
-    const t=new File([text],name.replace(/\.json$/,".txt"),{type:"text/plain"});
-    if(navigator.canShare&&navigator.canShare({files:[t]})){
-      await navigator.share({files:[t],title:name});
-      where.textContent="Sent as .txt \u2014 choose the project folder in OneDrive.";
-      return;
-    }
-  }catch(e){
-    if(e&&e.name==="AbortError"){ where.textContent="Sharing cancelled."; return; }
+    download(name,obj);
+    where.textContent=refused
+      ? "This browser refused to share the file \u2014 saved to Downloads instead. Upload it to OneDrive from there."
+      : "Sharing failed \u2014 saved to Downloads instead. Upload it to OneDrive from there.";
+    return;
   }
   download(name,obj);
-  where.textContent="This browser cannot share files \u2014 saved to the phone instead. Upload it from Downloads.";
+  where.textContent="This browser has no share function \u2014 saved to Downloads. Upload it to OneDrive from there.";
 }
 
 document.getElementById("shareOne").addEventListener("click",()=>{
