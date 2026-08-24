@@ -74,6 +74,7 @@ body{background:var(--paper);color:var(--ink);font-family:system-ui,-apple-syste
 .revbar #revNow{font-family:var(--mono);font-size:13px;color:var(--ink);flex:1}
 .revbar button{background:var(--hazard);border:0;color:#12161C;font-family:var(--cond);font-weight:700;font-size:15px;letter-spacing:.1em;text-transform:uppercase;padding:0 14px;min-height:44px;cursor:pointer}
 .tools .primary{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
+.tools button:disabled,.ghost:disabled{opacity:.4;cursor:not-allowed;border-style:dashed}
 .res,.noteprint,.printonly{display:none}
 .empty{background:var(--card);border:1px dashed var(--rule);padding:26px 16px;text-align:center;color:var(--muted);font-size:14px;margin-top:14px}
 
@@ -211,12 +212,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
     <div class="empty hidden" id="rEmpty">No machines yet. Add the first machine number above.</div>
 
     <div class="tools">
-      <button id="shareAll" class="primary">Send backup to OneDrive</button>
-      <button id="expAll">Backup all machines</button>
+      <button id="expAll" class="primary">Backup all machines</button>
       <label>Restore backup<input id="impFile" type="file" accept=".json,.txt,application/json,text/plain" hidden></label>
     </div>
     <p class="saveline" id="rSave"></p>
-    <p class="saveline">build 4</p>
+    <p class="saveline">build 7</p>
   </div>
 </div>
 
@@ -275,10 +275,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
     </section>
 
     <div class="tools">
-      <button id="shareOne" class="primary">Send to OneDrive</button>
+      <button id="expOne" class="primary">Save file</button>
+      <button id="openFolder" disabled>Open folder</button>
       <button id="printBtn">Print / PDF</button>
-      <button id="openFolder" class="hidden">Open folder</button>
-      <button id="expOne">Save to phone</button>
       <button id="delBtn" class="danger">Delete this machine</button>
     </div>
     <p class="saveline" id="saveState"></p>
@@ -532,7 +531,10 @@ function renderProjects(){
   add("__new__","+ New project\u2026");
   projSel.value = getProject(activeProj) ? activeProj : "";
   const p=getProject(activeProj);
-  document.getElementById("folderBtn").classList.toggle("hidden", !(p&&p.url));
+  const fb=document.getElementById("folderBtn");
+  fb.classList.toggle("hidden", !p);           /* no project chosen: nothing to open */
+  fb.disabled = !(p&&p.url);
+  fb.title = (p&&p.url) ? "Open the OneDrive folder" : "Add the folder link first (Link)";
   document.getElementById("linkBtn").classList.toggle("hidden", !p);
 }
 function newProject(){
@@ -703,7 +705,9 @@ function paintRev(){
   document.getElementById("revNow").textContent="Revision "+cur.rev+(started?" \u00b7 started "+started:"");
   document.getElementById("revBtn").textContent="Start rev "+(cur.rev+1);
   const p=getProject(cur.proj);
-  document.getElementById("openFolder").classList.toggle("hidden", !(p&&p.url));
+  const of=document.getElementById("openFolder");
+  of.disabled = !(p&&p.url);
+  of.title = (p&&p.url) ? "Open the OneDrive folder" : "No folder link saved for this project yet";
 }
 function openMachine(ref){
   let m=(ref&&typeof ref==="object")?migrate(ref):readM(ref);
@@ -825,60 +829,25 @@ function download(name,obj){
 }
 function payload(ms){ return {kind:"uis-checklist",v:3,machines:ms}; }
 
-/* One tap into the OneDrive app.
-   The browser only allows share() while the tap is still "fresh", so we pick an
-   accepted file type synchronously and call share() exactly once, with no await
-   before it. Falls back to a download when sharing is unavailable or refused. */
-function shareOrDownload(name,obj,noteId){
-  const where=document.getElementById(noteId);
-  const text=JSON.stringify(obj);
-  const say=t=>{ where.textContent=t; };
-
-  if(typeof navigator.share!=="function"){
-    download(name,obj);
-    say("This browser has no share function \u2014 saved to Downloads. Upload it to OneDrive from there.");
-    return;
-  }
-
-  /* pick the first file type this browser accepts, before any await */
-  const candidates=[[name,"application/json"],[name.replace(/\.json$/,".txt"),"text/plain"]];
-  let file=null;
-  for(const [fname,type] of candidates){
-    let f;
-    try{ f=new File([text],fname,{type:type}); }catch(e){ continue; }
-    if(typeof navigator.canShare!=="function" || navigator.canShare({files:[f]})){ file=f; break; }
-  }
-  if(!file){
-    download(name,obj);
-    say("This browser refuses to share this file type \u2014 saved to Downloads. Upload it to OneDrive from there.");
-    return;
-  }
-
-  /* single share call, still inside the tap */
-  navigator.share({files:[file]}).then(()=>{
-    say("Sent as "+file.name+" \u2014 choose the project folder in OneDrive.");
-  }).catch(err=>{
-    if(err&&err.name==="AbortError"){ say("Sharing cancelled \u2014 nothing was sent."); return; }
-    download(name,obj);
-    say("Sharing failed ("+((err&&err.name)||"error")+") \u2014 saved to Downloads. Upload it to OneDrive from there.");
-  });
+function payloadNote(name,noteId,proj){
+  const p=getProject(proj);
+  document.getElementById(noteId).textContent = (p&&p.url)
+    ? "Saved to Downloads as "+name+" \u2014 tap \u201cOpen folder\u201d and upload it there."
+    : "Saved to Downloads as "+name+" \u2014 upload it to OneDrive from your Downloads folder.";
 }
 
-document.getElementById("shareOne").addEventListener("click",()=>{
-  if(cur) shareOrDownload(fileBase(cur)+".json",payload([cur]),"saveState");
-});
-document.getElementById("shareAll").addEventListener("click",()=>{
-  const all=idx.filter(r=>!activeProj||(r.proj||"")===activeProj).map(r=>readM(r.id)).filter(Boolean);
-  if(!all.length) return alert("There are no machines to send yet.");
-  shareOrDownload((activeProj?safe(activeProj):"ALL")+"-QA-backup.json",payload(all),"rSave");
-});
 document.getElementById("expOne").addEventListener("click",()=>{
-  if(cur) download(fileBase(cur)+".json",payload([cur]));
+  if(!cur) return;
+  const name=fileBase(cur)+".json";
+  download(name,payload([cur]));
+  payloadNote(name,"saveState",cur.proj);
 });
 document.getElementById("expAll").addEventListener("click",()=>{
   const all=idx.filter(r=>!activeProj||(r.proj||"")===activeProj).map(r=>readM(r.id)).filter(Boolean);
   if(!all.length) return alert("There are no machines to back up yet.");
-  download((activeProj?safe(activeProj):"ALL")+"-QA-backup.json",payload(all));
+  const name=(activeProj?safe(activeProj):"ALL")+"-QA-backup.json";
+  download(name,payload(all));
+  payloadNote(name,"rSave",activeProj);
 });
 document.getElementById("impFile").addEventListener("change",e=>{
   const f=e.target.files[0]; if(!f) return;
