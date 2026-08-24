@@ -1,5 +1,5 @@
 /* UIS-ATR Quality Checklist — offline service worker */
-const CACHE = "uis-checklist-v2";
+const CACHE = "uis-checklist-v3";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
