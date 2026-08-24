@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UIS-ATR Quality Checklist</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1C222B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="UIS Checklist">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --ink:#12161C; --steel:#1C222B; --paper:#E7E9EC; --card:#FFFFFF;
+  --rule:#C7CCD3; --muted:#6A727D; --hazard:#FFC400;
+  --pass:#0B7A4B; --fail:#C0271F; --tap:48px;
+  --cond:"Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.45;padding-bottom:70px}
+.wrap{max-width:720px;margin:0 auto;padding:0 12px}
+.hidden{display:none!important}
+
+/* masthead */
+.mast{background:var(--steel);color:#fff;padding:16px 0 14px;border-bottom:5px solid var(--hazard)}
+.mast h1{font-family:var(--cond);font-weight:700;font-size:32px;line-height:.95;letter-spacing:.02em;text-transform:uppercase;margin:0}
+.mast .sub{color:#9AA4B1;font-size:13px;margin-top:7px;max-width:52ch}
+.tag{display:inline-block;background:var(--hazard);color:#12161C;font-family:var(--mono);font-weight:600;font-size:11px;letter-spacing:.14em;padding:3px 7px;margin-bottom:9px}
+.back{background:transparent;border:1px solid #4A5361;color:#9AA4B1;font-family:var(--cond);font-size:14px;letter-spacing:.1em;text-transform:uppercase;padding:7px 12px;min-height:40px;cursor:pointer;margin-bottom:10px}
+.back:hover{border-color:var(--hazard);color:var(--hazard)}
+
+/* fleet bar */
+.fleet{background:var(--card);border:1px solid var(--rule);margin-top:14px;padding:12px}
+.fleet .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.stat{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+.stat b{color:var(--ink);font-weight:600;font-size:15px}
+.stat.open b{color:var(--fail)}
+.stat.done b{color:var(--pass)}
+.addbar{display:flex;gap:8px;margin-top:12px}
+.addbar input{flex:1;min-width:0;border:1.5px solid var(--rule);padding:12px;font:inherit;font-size:16px}
+.addbar input:focus{outline:2px solid var(--hazard);outline-offset:-2px}
+.addbar button{background:var(--steel);color:#fff;border:0;font-family:var(--cond);font-weight:600;font-size:16px;letter-spacing:.12em;text-transform:uppercase;padding:0 18px;min-height:var(--tap);cursor:pointer}
+
+/* filters */
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{font-family:var(--cond);text-transform:uppercase;letter-spacing:.09em;font-size:13px;font-weight:600;background:transparent;color:#9AA4B1;border:1px solid #4A5361;padding:5px 10px;min-height:34px;cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--hazard);border-color:var(--hazard);color:#12161C}
+.rfilters{margin-top:12px}
+.rfilters button{color:var(--muted);border-color:var(--rule)}
+.rfilters button[aria-pressed="true"]{background:var(--steel);border-color:var(--steel);color:#fff}
+
+/* roster */
+.rlist{margin-top:14px}
+.mrowcard{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:1px solid var(--rule);border-bottom:0;padding:12px;min-height:64px;cursor:pointer;font:inherit;color:inherit;border-left:5px solid var(--rule)}
+.rlist .mrowcard:last-child{border-bottom:1px solid var(--rule)}
+.mrowcard.s-open{border-left-color:var(--fail)}
+.mrowcard.s-complete{border-left-color:var(--pass)}
+.mrowcard.s-progress{border-left-color:var(--hazard)}
+.mno{font-family:var(--mono);font-weight:600;font-size:17px;flex:0 0 auto;min-width:64px}
+.minfo{flex:1;min-width:0}
+.mstat{font-family:var(--cond);font-size:14px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.mstat.open{color:var(--fail)}.mstat.complete{color:var(--pass)}.mstat.progress{color:#9A6B00}.mstat.new{color:var(--muted)}
+.msub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px}
+.chev{color:var(--muted);font-size:20px}
+.warn{background:#FDECEA;border:1px solid var(--fail);border-left:5px solid var(--fail);color:#7A1710;padding:11px 12px;margin-top:12px;font-size:14px}
+.projbar{display:flex;gap:8px;margin-top:12px;align-items:stretch}
+.projbar select{flex:1;min-width:0;border:1.5px solid var(--rule);padding:11px;font:inherit;font-size:16px;background:#fff;color:var(--ink);min-height:var(--tap)}
+.ghost{background:transparent;border:1.5px solid var(--rule);color:var(--muted);font-family:var(--cond);font-size:14px;letter-spacing:.1em;text-transform:uppercase;padding:0 14px;min-height:var(--tap);cursor:pointer}
+.ghost:hover{border-color:var(--steel);color:var(--steel)}
+.revbar{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--rule);border-top:0;padding:10px 12px}
+.revbar #revNow{font-family:var(--mono);font-size:13px;color:var(--ink);flex:1}
+.revbar button{background:var(--hazard);border:0;color:#12161C;font-family:var(--cond);font-weight:700;font-size:15px;letter-spacing:.1em;text-transform:uppercase;padding:0 14px;min-height:44px;cursor:pointer}
+.tools .primary{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
+.res,.noteprint,.printonly{display:none}
+.empty{background:var(--card);border:1px dashed var(--rule);padding:26px 16px;text-align:center;color:var(--muted);font-size:14px;margin-top:14px}
+
+/* meta fields */
+.meta{background:var(--card);border:1px solid var(--rule);margin-top:14px}
+.frow{display:flex;align-items:center;border-bottom:1px solid var(--rule);min-height:var(--tap)}
+.frow:last-child{border-bottom:0}
+.frow label{flex:0 0 118px;padding:0 12px;font-family:var(--cond);font-weight:600;font-size:15px;letter-spacing:.09em;text-transform:uppercase;border-right:1px solid var(--rule);align-self:stretch;display:flex;align-items:center;background:#F4F5F7}
+.frow input{flex:1;min-width:0;border:0;background:transparent;padding:12px;font:inherit;font-size:16px;color:var(--ink)}
+.frow input:focus{outline:2px solid var(--hazard);outline-offset:-2px}
+.frow .fixed{flex:1;padding:12px;font-size:14px;color:var(--muted)}
+.note{border-left:4px solid var(--hazard);background:#FFF9E2;border-top:1px solid var(--rule);border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:10px 12px;margin-top:10px;font-size:14px}
+.note + .note{margin-top:6px}
+
+/* sticky strip */
+.strip{position:sticky;top:0;z-index:30;background:var(--steel);border-bottom:1px solid #000;margin-top:16px}
+.strip .inner{max-width:720px;margin:0 auto;padding:8px 12px}
+.gauge{display:flex;height:8px;background:#39414D;overflow:hidden}
+.gauge span{display:block;height:100%;transition:width .25s ease}
+.g-pass{background:#1FA36A}.g-fail{background:#E5453A}
+.counts{display:flex;gap:14px;align-items:center;margin-top:7px;flex-wrap:wrap}
+.counts .c{font-family:var(--mono);font-size:12px;color:#9AA4B1;letter-spacing:.04em;white-space:nowrap}
+.counts .c b{color:#fff;font-weight:600}
+.counts .filters{margin-left:auto}
+
+/* sections + items */
+.group{margin:22px 0 0;background:var(--steel);color:#fff;padding:11px 12px;font-family:var(--cond);font-weight:700;font-size:22px;letter-spacing:.12em;text-transform:uppercase;border-left:6px solid var(--hazard)}
+.sub{display:flex;align-items:baseline;gap:10px;margin:16px 0 0;padding:0 2px 6px;border-bottom:2px solid var(--ink)}
+.sub h3{margin:0;font-family:var(--cond);font-weight:600;font-size:17px;letter-spacing:.14em;text-transform:uppercase}
+.sub .range{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto}
+.item{background:var(--card);border:1px solid var(--rule);border-top:0;padding:10px 12px}
+.sub + .item{border-top:1px solid var(--rule)}
+.item.is-fail{border-left:4px solid var(--fail);padding-left:8px}
+.item.is-pass{border-left:4px solid var(--pass);padding-left:8px}
+.line{display:flex;gap:10px;align-items:flex-start}
+.num{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--muted);flex:0 0 30px;padding-top:3px;font-variant-numeric:tabular-nums}
+.txt{flex:1;font-size:15.5px}
+.ts{color:#9A6B00;font-weight:700}
+.marks{display:flex;gap:8px;margin-top:9px;padding-left:40px}
+.marks button{flex:1;min-height:var(--tap);border:1.5px solid var(--rule);background:#F7F8F9;font-family:var(--cond);font-weight:600;font-size:17px;letter-spacing:.16em;text-transform:uppercase;color:#5A626D;cursor:pointer}
+.marks .p[aria-pressed="true"]{background:var(--pass);border-color:var(--pass);color:#fff}
+.marks .f[aria-pressed="true"]{background:var(--fail);border-color:var(--fail);color:#fff}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--hazard);outline-offset:2px}
+.fix{display:none;margin-top:10px;padding-left:40px}
+.item.is-fail .fix{display:block}
+.fix textarea{width:100%;border:1px solid var(--rule);padding:10px;font:inherit;font-size:15px;min-height:56px;resize:vertical;background:#FFFDF5}
+.fix .lbl{font-family:var(--cond);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px}
+.solved{display:flex;align-items:center;gap:9px;margin-top:8px;min-height:44px;cursor:pointer}
+.solved input{width:22px;height:22px;accent-color:var(--pass);margin:0}
+.solved span{font-family:var(--cond);font-size:15px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+.solved .when{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0;text-transform:none;font-weight:400}
+
+/* disposition + tools */
+.disp{background:var(--card);border:1px solid var(--rule);margin-top:26px;padding:14px 12px}
+.disp h2{margin:0 0 12px;font-family:var(--cond);font-weight:700;font-size:21px;letter-spacing:.12em;text-transform:uppercase}
+.disp .btns{display:flex;gap:10px}
+.disp .btns button{flex:1;min-height:56px;border:1.5px solid var(--rule);background:#F7F8F9;cursor:pointer;font-family:var(--cond);font-weight:700;font-size:20px;letter-spacing:.18em;text-transform:uppercase;color:#5A626D}
+.disp .btns .p[aria-pressed="true"]{background:var(--pass);border-color:var(--pass);color:#fff}
+.disp .btns .f[aria-pressed="true"]{background:var(--fail);border-color:var(--fail);color:#fff}
+.disp .frow{border:1px solid var(--rule);margin-top:12px}
+.blocked{margin-top:10px;font-size:13px;color:var(--fail)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 30px}
+.tools button,.tools label{background:transparent;border:1px solid var(--rule);color:var(--muted);cursor:pointer;font-family:var(--cond);font-size:14px;letter-spacing:.1em;text-transform:uppercase;padding:10px 14px;min-height:44px;display:inline-flex;align-items:center}
+.tools .danger:hover{border-color:var(--fail);color:var(--fail)}
+.saveline{font-family:var(--mono);font-size:11px;color:var(--muted);margin:14px 0 0}
+
+@media print{
+  .strip,.tools,.back,.mast .sub,.rfilters,.addbar,.projbar,.fleet,.warn,.revbar,
+  .meta,.note,.marks,.fix textarea,.fix .lbl,.solved,#viewRoster{display:none!important}
+  body{background:#fff;padding:0;font-size:11pt}
+  .mast{background:#fff!important;color:#000!important;border-bottom:3px solid #000;padding:0 0 8px}
+  .mast h1{font-size:20pt;color:#000}
+  .tag{background:#000!important;color:#fff!important}
+  .printonly{display:block!important}
+  #printHead{border:1px solid #000;padding:8px 10px;margin:10px 0;font-size:10pt;line-height:1.6}
+  #printHead b{display:inline-block;min-width:96px}
+  .item.hidden{display:block!important}
+  [data-sub]{display:flex!important}
+  .item{break-inside:avoid;padding:4px 8px;border-left:0!important}
+  .line{align-items:baseline}
+  .txt{font-size:10.5pt}
+  .res{display:inline-block!important;font-family:var(--mono);font-size:9pt;font-weight:700;
+       border:1px solid #000;padding:0 5px;margin-left:8px;white-space:nowrap}
+  .res[data-r="pass"]{border-color:#0B7A4B;color:#0B7A4B}
+  .res[data-r="fail"]{border-color:#C0271F;color:#C0271F}
+  .res[data-r="none"]{color:#666;border-style:dashed}
+  .item.is-fail .fix{display:block!important;padding-left:40px}
+  .noteprint{display:block!important;font-size:9.5pt;border-left:2px solid #C0271F;padding-left:8px;margin-top:2px}
+  .group{background:#000!important;color:#fff!important;font-size:13pt;padding:5px 8px;margin-top:14px}
+  .sub{margin-top:10px}
+  .disp{border:1px solid #000;margin-top:18px}
+  .disp .btns button[aria-pressed="false"]{display:none}
+  .blocked{display:none!important}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ============ ROSTER ============ -->
+<div id="viewRoster">
+  <header class="mast"><div class="wrap">
+    <span class="tag">UIS-ATR</span>
+    <h1>Machine Roster</h1>
+    <p class="sub">One quality checklist per machine. Machines with unsolved failures stay open until every point is closed.</p>
+  </div></header>
+
+  <div class="wrap">
+    <div class="fleet">
+      <div class="row">
+        <span class="stat">MACHINES <b id="fTotal">0</b></span>
+        <span class="stat done">CLOSED <b id="fDone">0</b></span>
+        <span class="stat open">OPEN POINTS <b id="fOpen">0</b></span>
+      </div>
+      <div class="projbar">
+        <select id="projSel" aria-label="Project"></select>
+        <button id="folderBtn" class="ghost hidden">Folder</button>
+        <button id="linkBtn" class="ghost hidden">Link</button>
+      </div>
+      <div class="addbar">
+        <input id="newNo" type="text" placeholder="Machine No." autocomplete="off" enterkeyhint="done">
+        <button id="addBtn">Add</button>
+      </div>
+    </div>
+
+    <div class="filters rfilters">
+      <button data-rf="all" aria-pressed="true">All</button>
+      <button data-rf="open" aria-pressed="false">Open</button>
+      <button data-rf="progress" aria-pressed="false">In progress</button>
+      <button data-rf="complete" aria-pressed="false">Closed</button>
+    </div>
+
+    <p class="warn hidden"></p>
+    <div class="rlist" id="rlist"></div>
+    <div class="empty hidden" id="rEmpty">No machines yet. Add the first machine number above.</div>
+
+    <div class="tools">
+      <button id="shareAll" class="primary">Send backup to OneDrive</button>
+      <button id="expAll">Backup all machines</button>
+      <label>Restore backup<input id="impFile" type="file" accept=".json,application/json" hidden></label>
+    </div>
+    <p class="saveline" id="rSave"></p>
+  </div>
+</div>
+
+<!-- ============ CHECKLIST ============ -->
+<div id="viewCheck" class="hidden">
+  <header class="mast"><div class="wrap">
+    <button class="back" id="backBtn">← All machines</button>
+    <span class="tag" id="cTag">MACHINE</span>
+    <h1>Quality Checklist</h1>
+    <p class="sub">Hallway, front modules, shelves, and grounds — final installation and functional verification</p>
+  </div></header>
+
+  <div class="wrap">
+    <p class="warn hidden"></p>
+    <div id="printHead" class="printonly"></div>
+    <div class="meta">
+      <div class="frow"><label>Project</label><div class="fixed" id="projCell">\u2014</div></div>
+      <div class="frow"><label for="machine">Machine No.</label><input id="machine" type="text" autocomplete="off"></div>
+      <div class="frow"><label for="date">Date</label><input id="date" type="date"></div>
+      <div class="frow"><label for="inspector">Inspector</label><input id="inspector" type="text" autocomplete="off"></div>
+      <div class="frow"><label>Sections</label><div class="fixed">Hallway / Front Modules / Shelves / Grounds</div></div>
+    </div>
+    <div class="revbar">
+      <span id="revNow">Revision 1</span>
+      <button id="revBtn">Start rev 2</button>
+    </div>
+    <div class="note"><b>Instructions:</b> Mark one result for every item. Record the issue or corrective action in Notes for each FAIL.</div>
+    <div class="note"><b>Two-sided inspection:</b> Items marked with an asterisk (<span class="ts">*</span>) must be verified from both the front and rear sides of the module.</div>
+  </div>
+
+  <div class="strip"><div class="inner">
+    <div class="gauge"><span class="g-pass" id="gPass" style="width:0%"></span><span class="g-fail" id="gFail" style="width:0%"></span></div>
+    <div class="counts">
+      <div class="c">PASS <b id="cPass">0</b></div>
+      <div class="c">FAIL <b id="cFail">0</b></div>
+      <div class="c">LEFT <b id="cLeft">138</b></div>
+      <div class="filters">
+        <button data-filter="all" aria-pressed="true">All</button>
+        <button data-filter="todo" aria-pressed="false">To do</button>
+        <button data-filter="fails" aria-pressed="false">Fails</button>
+      </div>
+    </div>
+  </div></div>
+
+  <main class="wrap" id="list"></main>
+
+  <div class="wrap">
+    <section class="disp">
+      <h2>QC Disposition</h2>
+      <div class="btns">
+        <button class="p" id="dispPass" aria-pressed="false">Pass</button>
+        <button class="f" id="dispFail" aria-pressed="false">Fail</button>
+      </div>
+      <div class="frow"><label for="initials">Recheck initials</label><input id="initials" type="text" autocomplete="off"></div>
+      <p class="blocked hidden" id="blocked"></p>
+    </section>
+
+    <div class="tools">
+      <button id="shareOne" class="primary">Send to OneDrive</button>
+      <button id="printBtn">Print / PDF</button>
+      <button id="openFolder" class="hidden">Open folder</button>
+      <button id="expOne">Save to phone</button>
+      <button id="delBtn" class="danger">Delete this machine</button>
+    </div>
+    <p class="saveline" id="saveState"></p>
+  </div>
+</div>
+
+<script>
+const DATA = [
+ {group:"HALLWAY", subs:[
+  {name:"INPUT COLUMN", items:[
+   [1,"Front door steps are stable and do not move when stepped on, and the dampener panel step is in place."],
+   [2,"Top-front light-tower cable is secured and is not hanging."],
+   [3,"Both top small crossbars are installed."],
+   [4,"Two top-front and two top-rear iBot safety-stop bolts are installed and secured."],
+   [5,"Front side plexiglass panels are installed and secured."],
+   [6,"Ethernet cables are routed and secured correctly."]]},
+  {name:"CABLE ROUTING & ELECTRICAL", items:[
+   [7,"Light-tower cable is routed correctly on the left side."],
+   [8,"E-stop and light-tower cables are routed correctly on the right side."],
+   [9,"PTL power and Ethernet cables are routed through the wireway."],
+   [10,"Transceiver antenna is securely attached."],
+   [11,"Rear-door cables are routed and secured correctly."]]},
+  {name:"BRACKETS & CHARGING RAIL", items:[
+   [12,"All four long-return plexiglass brackets are installed."],
+   [13,"All three long-return brackets are installed."],
+   [14,"All 20 charging-rail brackets are installed and secured."],
+   [15,"Charging-rail end bracket is installed and secured."],
+   [16,"Charging rail is clean and free of debris."]]},
+  {name:"CHUTES & FUNCTIONAL TESTS", items:[
+   [17,"Chutes are fully installed and secured."],
+   [18,"Chutes slide freely without binding."],
+   [19,"All required chute springs are installed."]]},
+  {name:"FRONT DOOR", items:[
+   [20,"Left door-sensor bracket has all required screws."],
+   [21,"Door hooks are in the working position."],
+   [22,"Left sensor bracket is adjusted correctly to the door sensor."],
+   [23,"Door mounting bracket has all required screws."],
+   [24,"Door piston is properly installed."],
+   [25,"Door handle operates correctly."],
+   [26,"Door bearings are in place and secured."],
+   [27,"Door closes properly."],
+   [28,"Door cables are routed and secured correctly."]]},
+  {name:"REAR DOOR", items:[
+   [29,"Rear stickers are installed correctly: bottom caution and reset."],
+   [30,"Left door-sensor bracket has all required screws."],
+   [31,"Door hooks are in the working position."],
+   [32,"Left sensor bracket is adjusted correctly to the door sensor."],
+   [33,"Door mounting bracket has all required screws."],
+   [34,"Door piston is properly installed."],
+   [35,"Door handle operates correctly."],
+   [36,"Door bearings are in place and secured."],
+   [37,"Door closes properly."],
+   [38,"Door cables are routed and secured correctly."]]},
+  {name:"FINAL CONDITION", items:[
+   [39,"Hallway is clean and free of debris."]]}
+ ]},
+ {group:"FRONT MODULES", subs:[
+  {name:"REJECT BIN", items:[
+   [40,"Top bolts are installed and secured."],
+   [41,"Reject bin is level."],
+   [42,"Reject bin is screwed securely to the input module."],
+   [43,"Reject bin is anchored and torqued to specification."],
+   [44,"Bin tray is installed and secured."],
+   [45,"Bottom cover has an opening for the gray power cable."],
+   [46,"Reject-bin chute operates correctly and is properly installed."]]},
+  {name:"MCP", items:[
+   [47,"Door closes properly."],
+   [48,"Cable management is clean and organized."],
+   [49,"Electrical schematic is in place."],
+   [50,"Bottom cover is installed and secured."],
+   [51,"Gray vents are installed and secured."]]},
+  {name:"208 WIREWAY", items:[
+   [52,"Both bottom covers are installed with rubber protection."],
+   [53,"Top-front and top-left wireways have no gaps."],
+   [54,"All screws are installed and secured."]]},
+  {name:"DOG HOUSE", items:[
+   [55,"Guillotine door slides smoothly."],
+   [56,"Front door closes properly."],
+   [57,"Front-door lock engages properly."],
+   [58,"Area is clean and free of debris."]]},
+  {name:"SCAN TUNNEL", items:[
+   [59,"Black plexiglass is flush to the input module. *"],
+   [60,"Monitor cables are organized."],
+   [61,"Black plexiglass hinges have all required screws."],
+   [62,"Keyboard is installed."],
+   [63,"Claw is installed."],
+   [64,"Module is at the proper height. *"],
+   [65,"Module is anchored. *"],
+   [66,"Electrical-box cables are organized. *"],
+   [67,"I/O-box power cables are organized. *"],
+   [68,"Electrical-box plugs are fastened. *"],
+   [69,"Black plexiglass at I/O modules is flush. *"],
+   [70,"Leg connectors are in place. *"],
+   [71,"Electrical box has all three screws installed. *"]]},
+  {name:"INFEED", items:[
+   [72,"Infeed is at the proper height."],
+   [73,"Infeed is level."],
+   [74,"Feet nuts are fastened. *"],
+   [75,"Manual is in place."],
+   [76,"All screws are installed and secured. *"],
+   [77,"Sign cover is installed and flush."],
+   [78,"Feet profile black plastic covers are in place. *"],
+   [79,"Every foot is sitting on the floor. *"],
+   [80,"Small black plastic top cover is in place."],
+   [81,"Middle foot plate is in place and bolted."]]},
+  {name:"PREFEED", items:[
+   [82,"Feet nuts are fastened."],
+   [83,"All screws are installed and secured."],
+   [84,"Every foot is sitting on the ground."],
+   [85,"Prefeed is level with the infeed."],
+   [86,"Covers are installed and flush."],
+   [87,"Floor plate is in place and anchored."],
+   [88,"Pin to short return is in place."],
+   [89,"Foot plate to 208 wireway is in place."],
+   [90,"Bottom plate to infeed is secured with knob screws."]]},
+  {name:"SHORT RETURN", items:[
+   [91,"Short return is level."],
+   [92,"Level-screw nuts are fastened."],
+   [93,"Pin to long return is in place."],
+   [94,"All screws are installed and secured."]]},
+  {name:"LONG RETURN", items:[
+   [95,"Long return is level."],
+   [96,"All screws are in position. *"],
+   [97,"Top plexiglass is in position and screws are fastened. *"],
+   [98,"Power and signal cables are connected."],
+   [99,"Feet nuts are fastened. *"],
+   [100,"Floor plate is anchored."]]},
+  {name:"MONITOR TREE", items:[
+   [101,"Monitors and keyboards are at the correct height."],
+   [102,"White hanger is installed."],
+   [103,"Cables are routed and secured correctly."]]}
+ ]},
+ {group:"SHELVES", subs:[
+  {name:"SHELVES", items:[
+   [104,"E-stop cables are not hanging or showing."],
+   [105,"Three small plexiglass panels are installed on the second extension wall."],
+   [106,"Front and rear plexiglass panels are installed."],
+   [107,"Black washers are installed on plexiglass screws."],
+   [108,"Black rubber for plexiglass is in place."],
+   [109,"Yellow cup holders are in place."],
+   [110,"All flaps swing with the correct orientation."],
+   [111,"Shelves are clean."],
+   [112,"Area is clean and free of debris."],
+   [113,"First extension-wall cables on top are organized."],
+   [114,"Extension-wall warning stickers are installed."],
+   [115,"PTL light letters are in the correct order."],
+   [116,"Silver cap is installed on the left rear-door bracket."],
+   [117,"Kick plates have all screws installed and are flush to the floor."],
+   [118,"Dampener trays are screwed in and match the rivets."],
+   [119,"E-stop button is stiff."],
+   [120,"Door bumper is installed on the front plexiglass."],
+   [121,"Chutes have all screws installed. *"],
+   [122,"Bin walls have all rivets installed."],
+   [123,"All C-clamps are in place."],
+   [124,"All rear retention brackets are properly installed."],
+   [125,"Both claws are in place."]]}
+ ]},
+ {group:"GROUNDS", subs:[
+  {name:"GROUNDS", items:[
+   [126,"Three grounds from the 208 wireway are installed on top of the input module."],
+   [127,"Infeed plexiglass is grounded to the input module."],
+   [128,"Reject-bin plexiglass is grounded to the input module."],
+   [129,"Long-return plexiglass is grounded to the expansion module."],
+   [130,"MCP is grounded to the input module."],
+   [131,"Scan tunnel is grounded to the dog house."],
+   [132,"E-stops are grounded to the extension walls."],
+   [133,"Scan-tunnel monitor is grounded to the scan-tunnel frame."],
+   [134,"Prefeed conveyor is grounded to the infeed conveyor."],
+   [135,"208 wireway is grounded to the input column."],
+   [136,"Long return is grounded to the short-return conveyor."],
+   [137,"Long return is grounded to the 208 wireway."],
+   [138,"Monitor tree is grounded to the infeed conveyor."]]}
+ ]}
+];
+
+const TOTAL=138;
+const IDX="uis:v2:index";
+const MK=id=>"uis:v2:m:"+id;
+let idx=[], cur=null, filter="all", rfilter="all";
+
+/* ---------- storage (memory fallback when the browser blocks it) ---------- */
+const MEM={}; let STORAGE_OK=true;
+function flagStorage(){
+  STORAGE_OK=false;
+  document.querySelectorAll(".warn").forEach(w=>{
+    w.textContent="This browser is not saving to the device. Work stays only while this tab is open \u2014 send each machine to OneDrive before closing.";
+    w.classList.remove("hidden");
+  });
+}
+function sGet(k){ if(STORAGE_OK){ try{ return localStorage.getItem(k); }catch(e){ flagStorage(); } } return (MEM[k]!==undefined)?MEM[k]:null; }
+function sSet(k,v){ MEM[k]=v; if(STORAGE_OK){ try{ localStorage.setItem(k,v); return true; }catch(e){ flagStorage(); } } return false; }
+function sDel(k){ delete MEM[k]; if(STORAGE_OK){ try{ localStorage.removeItem(k); }catch(e){} } }
+
+function migrate(m){
+  if(!m) return m;
+  if(m.proj===undefined) m.proj="";
+  if(!m.rev) m.rev=1;
+  if(!Array.isArray(m.revs)||!m.revs.length) m.revs=[{n:1,started:m.updated||Date.now()}];
+  return m;
+}
+function readIdx(){ try{return JSON.parse(sGet(IDX))||[]}catch(e){return []} }
+function writeIdx(){ return sSet(IDX,JSON.stringify(idx)); }
+function readM(id){ try{return migrate(JSON.parse(sGet(MK(id))))}catch(e){return null} }
+function writeM(m){ return sSet(MK(m.id),JSON.stringify(m)); }
+function newM(no,proj){ const t=Date.now();
+  return {id:"m"+t.toString(36)+Math.random().toString(36).slice(2,6),no:no,proj:proj||"",date:"",inspector:"",initials:"",
+          disp:null,rev:1,revs:[{n:1,started:t}],items:{},updated:t}; }
+
+/* ---------- projects ---------- */
+const PK="uis:v2:projects";
+let projects=[], activeProj="";
+function readProjects(){ try{return JSON.parse(sGet(PK))||[]}catch(e){return []} }
+function writeProjects(){ return sSet(PK,JSON.stringify(projects)); }
+function getProject(name){ return projects.find(p=>p.name===name); }
+function projLabel(m){ return (m.proj?m.proj+"-":"")+"QA-"+m.no; }
+function safe(v){ return String(v||"").trim().replace(/[^\w-]/g,"_"); }
+function fileBase(m){
+  const s=summarize(m);
+  const tag = s.done<TOTAL ? "INPROGRESS"      /* revision not finished yet */
+            : s.open>0     ? "OPEN"            /* all checked, failures still open */
+            : m.disp       ? "CLOSED"          /* all checked, nothing open, signed off */
+            : "INPROGRESS";                    /* all checked but no QC disposition yet */
+  return safe(m.proj||"NOPROJ")+"-QA-"+safe(m.no)+"-rev"+(m.rev||1)+"-"+tag;
+}
+
+function summarize(m){
+  let p=0,f=0,open=0;
+  for(const k in m.items){const r=m.items[k];if(r.r==="pass")p++;else if(r.r==="fail"){f++;if(!r.solved)open++;}}
+  const done=p+f;
+  let status="new";
+  if(open>0) status="open";
+  else if(done===0) status="new";
+  else if(done<TOTAL) status="progress";
+  else status = m.disp ? "complete" : "progress";
+  return {p:p,f:f,open:open,done:done,status:status};
+}
+function syncIdx(m){
+  const s=summarize(m), e=idx.find(x=>x.id===m.id);
+  const row={id:m.id,no:m.no,proj:m.proj||"",rev:m.rev||1,done:s.done,fail:s.f,open:s.open,status:s.status,updated:m.updated};
+  if(e) Object.assign(e,row); else idx.push(row);
+  writeIdx();
+}
+
+/* ---------- project selector ---------- */
+const projSel=document.getElementById("projSel");
+function renderProjects(){
+  projSel.innerHTML="";
+  const add=(v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;projSel.appendChild(o);};
+  add("","All projects");
+  projects.forEach(p=>add(p.name,p.name));
+  add("__new__","+ New project\u2026");
+  projSel.value = getProject(activeProj) ? activeProj : "";
+  const p=getProject(activeProj);
+  document.getElementById("folderBtn").classList.toggle("hidden", !(p&&p.url));
+  document.getElementById("linkBtn").classList.toggle("hidden", !p);
+}
+function newProject(){
+  const name=(prompt("Project name (e.g. BLV1)")||"").trim();
+  if(!name){ renderProjects(); return; }
+  if(!getProject(name)){
+    const url=(prompt("OneDrive folder link for "+name+" (optional \u2014 paste it or leave blank)")||"").trim();
+    projects.push({name:name,url:url}); writeProjects();
+  }
+  activeProj=name; renderProjects(); renderRoster();
+}
+projSel.addEventListener("change",()=>{
+  if(projSel.value==="__new__"){ newProject(); return; }
+  activeProj=projSel.value; renderProjects(); renderRoster();
+});
+document.getElementById("folderBtn").addEventListener("click",()=>{
+  const p=getProject(activeProj); if(p&&p.url) window.open(p.url,"_blank","noopener");
+});
+document.getElementById("linkBtn").addEventListener("click",()=>{
+  const p=getProject(activeProj); if(!p) return;
+  const url=prompt("OneDrive folder link for "+p.name,p.url||"");
+  if(url===null) return;
+  p.url=url.trim(); writeProjects(); renderProjects();
+});
+
+/* ---------- roster ---------- */
+const rlist=document.getElementById("rlist");
+function natSort(a,b){ return String(a.no).localeCompare(String(b.no),undefined,{numeric:true,sensitivity:"base"}); }
+function statusText(r){
+  if(r.status==="open") return r.open+" point"+(r.open===1?"":"s")+" open";
+  if(r.status==="complete") return "Closed";
+  if(r.status==="new") return "Not started";
+  return "In progress";
+}
+function renderRoster(){
+  rlist.innerHTML="";
+  const rows=idx.slice().sort(natSort)
+    .filter(r=>!activeProj || (r.proj||"")===activeProj)
+    .filter(r=>rfilter==="all"?true:
+      rfilter==="open"?r.status==="open":
+      rfilter==="complete"?r.status==="complete":
+      (r.status==="progress"||r.status==="new"));
+  rows.forEach(r=>{
+    const b=document.createElement("button");
+    b.className="mrowcard s-"+r.status; b.dataset.id=r.id;
+    b.innerHTML='<span class="mno"></span><span class="minfo"><span class="mstat '+r.status+'"></span><span class="msub"></span></span><span class="chev">›</span>';
+    b.querySelector(".mstat").textContent=statusText(r);
+    b.querySelector(".mno").textContent=(r.proj?r.proj+"-":"")+"QA-"+r.no;
+    b.querySelector(".msub").textContent="rev"+(r.rev||1)+" · "+r.done+"/"+TOTAL+" checked"+(r.fail?" · "+r.fail+" failed":"");
+    rlist.appendChild(b);
+  });
+  document.getElementById("rEmpty").classList.toggle("hidden", idx.length>0);
+  const scope=idx.filter(r=>!activeProj||(r.proj||"")===activeProj);
+  document.getElementById("fTotal").textContent=scope.length;
+  document.getElementById("fDone").textContent=scope.filter(r=>r.status==="complete").length;
+  document.getElementById("fOpen").textContent=scope.reduce((a,r)=>a+(r.open||0),0);
+}
+rlist.addEventListener("click",e=>{const b=e.target.closest(".mrowcard");if(b)openMachine(b.dataset.id);});
+document.querySelectorAll(".rfilters button").forEach(b=>b.addEventListener("click",()=>{
+  rfilter=b.dataset.rf;
+  document.querySelectorAll(".rfilters button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  renderRoster();
+}));
+function addMachine(){
+  const inp=document.getElementById("newNo"), no=inp.value.trim();
+  if(!no) return inp.focus();
+  if(!activeProj){ alert("Pick a project first (or create one) so the machine and its files are labelled."); projSel.focus(); return; }
+  const dup=idx.find(r=>(r.proj||"")===activeProj && String(r.no).toLowerCase()===no.toLowerCase());
+  if(dup){ inp.value=""; return openMachine(dup.id); }
+  const m=newM(no,activeProj); writeM(m); syncIdx(m); inp.value=""; renderRoster(); openMachine(m);
+}
+document.getElementById("addBtn").addEventListener("click",addMachine);
+document.getElementById("newNo").addEventListener("keydown",e=>{if(e.key==="Enter")addMachine();});
+
+/* ---------- checklist build ---------- */
+const list=document.getElementById("list");
+DATA.forEach(g=>{
+  const gh=document.createElement("div");gh.className="group";gh.textContent=g.group;list.appendChild(gh);
+  g.subs.forEach(s=>{
+    if(!(g.subs.length===1&&s.name===g.group)){
+      const sh=document.createElement("div");sh.className="sub";sh.dataset.sub="1";
+      sh.innerHTML='<h3></h3><span class="range"></span>';
+      sh.querySelector("h3").textContent=s.name;
+      sh.querySelector(".range").textContent=s.items[0][0]+"–"+s.items[s.items.length-1][0];
+      list.appendChild(sh);
+    }
+    s.items.forEach(([n,text])=>{
+      const el=document.createElement("section");el.className="item";el.dataset.n=n;
+      const marked=text.endsWith(" *"), body=marked?text.slice(0,-2):text;
+      el.innerHTML='<div class="line"><div class="num">'+n+'</div><div class="txt"></div><span class="res" data-r="none">NOT CHECKED</span></div>'+
+        '<div class="marks"><button class="p" aria-pressed="false" aria-label="Item '+n+' pass">Pass</button>'+
+        '<button class="f" aria-pressed="false" aria-label="Item '+n+' fail">Fail</button></div>'+
+        '<div class="fix"><label class="lbl" for="nt'+n+'">Notes / corrective action</label>'+
+        '<textarea id="nt'+n+'" placeholder="Describe the issue and the corrective action"></textarea>'+
+        '<label class="solved"><input type="checkbox"><span>Solved</span><span class="when"></span></label>'+
+        '<div class="noteprint"></div></div>';
+      const t=el.querySelector(".txt"); t.textContent=body;
+      if(marked){const a=document.createElement("span");a.className="ts";a.textContent=" *";a.title="Verify front and rear";t.appendChild(a);}
+      list.appendChild(el);
+    });
+  });
+});
+
+function rec(n){ if(!cur.items[n]) cur.items[n]={r:null,note:"",solved:false,closed:""}; return cur.items[n]; }
+function paint(n){
+  const el=list.querySelector('.item[data-n="'+n+'"]'); if(!el) return;
+  const r=cur.items[n]||{r:null,note:"",solved:false,closed:""};
+  el.classList.toggle("is-pass",r.r==="pass");
+  el.classList.toggle("is-fail",r.r==="fail");
+  el.querySelector(".p").setAttribute("aria-pressed",r.r==="pass");
+  el.querySelector(".f").setAttribute("aria-pressed",r.r==="fail");
+  el.querySelector("textarea").value=r.note||"";
+  el.querySelector(".solved input").checked=!!r.solved;
+  el.querySelector(".when").textContent=r.solved&&r.closed?"closed "+r.closed:"";
+  const badge=el.querySelector(".res");
+  badge.dataset.r=r.r||"none";
+  badge.textContent = r.r==="pass" ? "PASS" : r.r==="fail" ? (r.solved?"FAIL \u2192 SOLVED":"FAIL \u2014 OPEN") : "NOT CHECKED";
+  el.querySelector(".noteprint").textContent =
+    r.r==="fail" ? ((r.note||"(no note)")+(r.solved&&r.closed?"  \u2014 solved "+r.closed:"")) : "";
+}
+function applyFilter(){
+  list.querySelectorAll(".item").forEach(el=>{
+    const r=cur.items[el.dataset.n]||{r:null};
+    let show=true;
+    if(filter==="todo") show=(!r.r)||(r.r==="fail"&&!r.solved);
+    if(filter==="fails") show=(r.r==="fail");
+    el.classList.toggle("hidden",!show);
+  });
+  list.querySelectorAll('[data-sub]').forEach(sh=>{
+    let nx=sh.nextElementSibling,any=false;
+    while(nx&&nx.classList.contains("item")){if(!nx.classList.contains("hidden"))any=true;nx=nx.nextElementSibling;}
+    sh.style.display=any?"":"none";
+  });
+}
+function tally(){
+  const s=summarize(cur);
+  document.getElementById("cPass").textContent=s.p;
+  document.getElementById("cFail").textContent=s.f;
+  document.getElementById("cLeft").textContent=TOTAL-s.done;
+  document.getElementById("gPass").style.width=(s.p/TOTAL*100)+"%";
+  document.getElementById("gFail").style.width=(s.f/TOTAL*100)+"%";
+  const bl=document.getElementById("blocked");
+  if(s.open>0){ bl.textContent=s.open+" point"+(s.open===1?"":"s")+" still open — mark them Solved to close this machine."; bl.classList.remove("hidden"); }
+  else if(s.done<TOTAL){ bl.textContent=(TOTAL-s.done)+" point"+(TOTAL-s.done===1?"":"s")+" not checked yet."; bl.classList.remove("hidden"); }
+  else bl.classList.add("hidden");
+}
+
+/* ---------- save ---------- */
+let t=null; const saveNote=document.getElementById("saveState");
+function save(){
+  clearTimeout(t);
+  t=setTimeout(()=>{
+    cur.updated=Date.now();
+    const ok=writeM(cur); syncIdx(cur);
+    saveNote.textContent= ok ? "Saved on this device "+new Date().toLocaleTimeString()
+      : "NOT SAVED — storage is full or blocked. Export a backup now.";
+  },350);
+}
+
+/* ---------- open / close ---------- */
+function paintRev(){
+  if(!cur) return;
+  const r=(cur.revs||[]).find(x=>x.n===cur.rev);
+  const started=r&&r.started?new Date(r.started).toLocaleDateString():"";
+  document.getElementById("revNow").textContent="Revision "+cur.rev+(started?" \u00b7 started "+started:"");
+  document.getElementById("revBtn").textContent="Start rev "+(cur.rev+1);
+  const p=getProject(cur.proj);
+  document.getElementById("openFolder").classList.toggle("hidden", !(p&&p.url));
+}
+function openMachine(ref){
+  let m=(ref&&typeof ref==="object")?migrate(ref):readM(ref);
+  if(!m){ const row=idx.find(r=>r.id===ref); if(!row){alert("That machine could not be found.");return;} m=newM(row.no,row.proj); m.id=row.id; }
+  cur=m; filter="all";
+  document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.filter==="all"));
+  document.getElementById("cTag").textContent=projLabel(m);
+  document.getElementById("projCell").textContent=m.proj||"\u2014 no project \u2014";
+  document.getElementById("machine").value=m.no||"";
+  document.getElementById("date").value=m.date||"";
+  document.getElementById("inspector").value=m.inspector||"";
+  document.getElementById("initials").value=m.initials||"";
+  for(let n=1;n<=TOTAL;n++) paint(n);
+  paintDisp(); paintRev(); tally(); applyFilter();
+  saveNote.textContent="Last saved "+new Date(m.updated).toLocaleString();
+  document.getElementById("viewRoster").classList.add("hidden");
+  document.getElementById("viewCheck").classList.remove("hidden");
+  window.scrollTo(0,0);
+}
+function closeMachine(){
+  document.getElementById("viewCheck").classList.add("hidden");
+  document.getElementById("viewRoster").classList.remove("hidden");
+  cur=null; renderRoster(); window.scrollTo(0,0);
+}
+document.getElementById("backBtn").addEventListener("click",closeMachine);
+
+/* ---------- checklist events ---------- */
+list.addEventListener("click",e=>{
+  const btn=e.target.closest(".marks button"); if(!btn||!cur) return;
+  const el=btn.closest(".item"), n=el.dataset.n, r=rec(n);
+  const want=btn.classList.contains("p")?"pass":"fail";
+  r.r=(r.r===want)?null:want;
+  if(r.r!=="fail"){r.note="";r.solved=false;r.closed="";}
+  paint(n); tally(); save();
+  if(filter!=="all") applyFilter();
+});
+list.addEventListener("input",e=>{ if(e.target.tagName==="TEXTAREA"&&cur){ rec(e.target.closest(".item").dataset.n).note=e.target.value; save(); } });
+list.addEventListener("change",e=>{
+  if(e.target.type==="checkbox"&&cur){
+    const el=e.target.closest(".item"), r=rec(el.dataset.n);
+    r.solved=e.target.checked;
+    r.closed=r.solved?new Date().toLocaleDateString():"";
+    paint(el.dataset.n); tally(); save();
+    if(filter!=="all") applyFilter();
+  }
+});
+document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener("click",()=>{
+  filter=b.dataset.filter;
+  document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute("aria-pressed",x===b));
+  applyFilter();
+}));
+document.getElementById("machine").addEventListener("input",e=>{if(cur){cur.no=e.target.value;document.getElementById("cTag").textContent=projLabel(cur);save();}});
+["date","inspector","initials"].forEach(id=>document.getElementById(id).addEventListener("input",e=>{if(cur){cur[id]=e.target.value;save();}}));
+
+function paintDisp(){
+  document.getElementById("dispPass").setAttribute("aria-pressed",cur&&cur.disp==="pass");
+  document.getElementById("dispFail").setAttribute("aria-pressed",cur&&cur.disp==="fail");
+}
+document.getElementById("dispPass").addEventListener("click",()=>{if(!cur)return;cur.disp=cur.disp==="pass"?null:"pass";paintDisp();tally();save();});
+document.getElementById("dispFail").addEventListener("click",()=>{if(!cur)return;cur.disp=cur.disp==="fail"?null:"fail";paintDisp();tally();save();});
+document.getElementById("revBtn").addEventListener("click",()=>{
+  if(!cur) return;
+  const s=summarize(cur), pend=(TOTAL-s.done)+s.open;
+  if(!confirm("Start revision "+(cur.rev+1)+" of machine "+projLabel(cur)+"?\n\n"+
+    "Every mark and note is kept. "+pend+" point"+(pend===1?"":"s")+" will need attention: "+
+    (TOTAL-s.done)+" never checked, "+s.open+" failed and still open.\n\n"+
+    "The QC disposition is cleared so this revision gets its own sign-off.")) return;
+  cur.rev=(cur.rev||1)+1;
+  cur.revs.push({n:cur.rev,started:Date.now()});
+  cur.disp=null;
+  paintRev(); paintDisp(); tally(); save();
+  filter="todo";
+  document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.filter==="todo"));
+  applyFilter(); window.scrollTo(0,0);
+});
+document.getElementById("openFolder").addEventListener("click",()=>{
+  const p=cur&&getProject(cur.proj); if(p&&p.url) window.open(p.url,"_blank","noopener");
+});
+
+/* ---------- print: full report, correct filename ---------- */
+document.getElementById("printBtn").addEventListener("click",()=>{
+  if(!cur) return window.print();
+  const s=summarize(cur);
+  const head=document.getElementById("printHead");
+  head.innerHTML="";
+  const rows=[
+    ["Project", cur.proj||"\u2014"],
+    ["Machine", projLabel(cur)],
+    ["Revision", "rev "+cur.rev],
+    ["Date", cur.date||new Date().toLocaleDateString()],
+    ["Inspector", cur.inspector||"\u2014"],
+    ["Result", s.p+" pass \u00b7 "+s.f+" fail \u00b7 "+(TOTAL-s.done)+" not checked \u00b7 "+s.open+" still open"],
+    ["Printed", new Date().toLocaleString()]
+  ];
+  rows.forEach(([k,v])=>{
+    const d=document.createElement("div");
+    const b=document.createElement("b"); b.textContent=k;
+    d.appendChild(b); d.appendChild(document.createTextNode(v));
+    head.appendChild(d);
+  });
+  const prev=document.title;
+  document.title=fileBase(cur);
+  window.print();
+  setTimeout(()=>{document.title=prev;},1000);
+});
+document.getElementById("delBtn").addEventListener("click",()=>{
+  if(!cur) return;
+  if(!confirm("Delete machine "+cur.no+" and all of its marks? This cannot be undone.")) return;
+  sDel(MK(cur.id));
+  idx=idx.filter(r=>r.id!==cur.id); writeIdx(); closeMachine();
+});
+
+/* ---------- backup ---------- */
+function download(name,obj){
+  const b=new Blob([JSON.stringify(obj)],{type:"application/json"});
+  const u=URL.createObjectURL(b), a=document.createElement("a");
+  a.href=u; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(u);a.remove();},500);
+}
+function payload(ms){ return {kind:"uis-checklist",v:3,machines:ms}; }
+
+/* One tap into the OneDrive app. Falls back to a download when the browser
+   cannot share files (desktop, older iOS, unsupported type). */
+async function shareOrDownload(name,obj,noteId){
+  const where=document.getElementById(noteId);
+  const text=JSON.stringify(obj);
+  try{
+    const f=new File([text],name,{type:"application/json"});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){
+      await navigator.share({files:[f],title:name});
+      where.textContent="Sent \u2014 choose the project folder in OneDrive.";
+      return;
+    }
+    const t=new File([text],name.replace(/\.json$/,".txt"),{type:"text/plain"});
+    if(navigator.canShare&&navigator.canShare({files:[t]})){
+      await navigator.share({files:[t],title:name});
+      where.textContent="Sent as .txt \u2014 choose the project folder in OneDrive.";
+      return;
+    }
+  }catch(e){
+    if(e&&e.name==="AbortError"){ where.textContent="Sharing cancelled."; return; }
+  }
+  download(name,obj);
+  where.textContent="This browser cannot share files \u2014 saved to the phone instead. Upload it from Downloads.";
+}
+
+document.getElementById("shareOne").addEventListener("click",()=>{
+  if(cur) shareOrDownload(fileBase(cur)+".json",payload([cur]),"saveState");
+});
+document.getElementById("shareAll").addEventListener("click",()=>{
+  const all=idx.filter(r=>!activeProj||(r.proj||"")===activeProj).map(r=>readM(r.id)).filter(Boolean);
+  if(!all.length) return alert("There are no machines to send yet.");
+  shareOrDownload((activeProj?safe(activeProj):"ALL")+"-QA-backup.json",payload(all),"rSave");
+});
+document.getElementById("expOne").addEventListener("click",()=>{
+  if(cur) download(fileBase(cur)+".json",payload([cur]));
+});
+document.getElementById("expAll").addEventListener("click",()=>{
+  const all=idx.filter(r=>!activeProj||(r.proj||"")===activeProj).map(r=>readM(r.id)).filter(Boolean);
+  if(!all.length) return alert("There are no machines to back up yet.");
+  download((activeProj?safe(activeProj):"ALL")+"-QA-backup.json",payload(all));
+});
+document.getElementById("impFile").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const d=JSON.parse(rd.result);
+      if(!d||d.kind!=="uis-checklist"||!Array.isArray(d.machines)) throw 0;
+      let added=0,updated=0,skipped=0;
+      const norm=v=>String(v||"").trim().toLowerCase();
+      const key=x=>norm(x.proj)+"|"+norm(x.no);
+      d.machines.forEach(raw=>{
+        const m=migrate(raw);
+        if(!m||!m.id) return;
+        const hit=idx.find(r=>r.id===m.id)||idx.find(r=>key(r)===key(m));
+        if(hit){
+          const old=readM(hit.id);
+          if(old&&(old.updated||0)>=(m.updated||0)){ skipped++; return; }
+          m.id=hit.id; updated++;
+        } else added++;
+        if(m.proj&&!getProject(m.proj)){ projects.push({name:m.proj,url:""}); writeProjects(); }
+        writeM(m); syncIdx(m);
+      });
+      renderProjects(); renderRoster();
+      document.getElementById("rSave").textContent="Merged: "+added+" new, "+updated+" updated, "+skipped+" already current.";
+    }catch(err){ alert("That file is not a checklist backup."); }
+    e.target.value="";
+  };
+  rd.readAsText(f);
+});
+
+/* ---------- start ---------- */
+if("serviceWorker" in navigator){ window.addEventListener("load",function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); }); }
+try{ localStorage.setItem("uis:test","1"); localStorage.removeItem("uis:test"); }catch(e){ flagStorage(); }
+idx=readIdx(); projects=readProjects();
+idx.forEach(r=>{ if(r.proj&&!getProject(r.proj)){ projects.push({name:r.proj,url:""}); } });
+writeProjects();
+if(projects.length===1) activeProj=projects[0].name;
+renderProjects(); renderRoster();
+document.getElementById("rSave").textContent = STORAGE_OK
+  ? "Storage: saving on this device."
+  : "Storage: memory only \u2014 nothing survives closing this tab.";
+</script>
+</body>
+</html>
