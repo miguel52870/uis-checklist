@@ -72,9 +72,11 @@ body{background:var(--paper);color:var(--ink);font-family:system-ui,-apple-syste
 .ghost:hover{border-color:var(--steel);color:var(--steel)}
 .revbar{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--rule);border-top:0;padding:10px 12px}
 .revbar #revNow{font-family:var(--mono);font-size:13px;color:var(--ink);flex:1}
+.revbar .ghostsm{background:transparent;border:1px solid var(--rule);color:var(--muted);font-weight:600}
 .revbar button{background:var(--hazard);border:0;color:#12161C;font-family:var(--cond);font-weight:700;font-size:15px;letter-spacing:.1em;text-transform:uppercase;padding:0 14px;min-height:44px;cursor:pointer}
 .tools .primary{background:var(--steel);border-color:var(--steel);color:#fff;font-weight:600}
 .tools button:disabled,.ghost:disabled{opacity:.4;cursor:not-allowed;border-style:dashed}
+.hint{background:#FFF9E2;border:1px solid var(--rule);border-left:5px solid var(--hazard);padding:11px 12px;margin-top:12px;font-size:14px}
 .res,.noteprint,.printonly{display:none}
 .empty{background:var(--card);border:1px dashed var(--rule);padding:26px 16px;text-align:center;color:var(--muted);font-size:14px;margin-top:14px}
 
@@ -208,15 +210,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
     </div>
 
     <p class="warn hidden"></p>
+    <p class="hint hidden" id="quota"></p>
     <div class="rlist" id="rlist"></div>
     <div class="empty hidden" id="rEmpty">No machines yet. Add the first machine number above.</div>
 
     <div class="tools">
       <button id="expAll" class="primary">Backup all machines</button>
+      <button id="clearAll" class="danger">Back up &amp; clear phone</button>
       <label>Restore backup<input id="impFile" type="file" accept=".json,.txt,application/json,text/plain" hidden></label>
     </div>
     <p class="saveline" id="rSave"></p>
-    <p class="saveline">build 7</p>
+    <p class="saveline">build 9</p>
   </div>
 </div>
 
@@ -241,7 +245,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
     </div>
     <div class="revbar">
       <span id="revNow">Revision 1</span>
-      <button id="revBtn">Start rev 2</button>
+      <button id="revBtn">Finish rev 1</button>
+      <button id="reopenBtn" class="ghostsm hidden">Reopen</button>
     </div>
     <div class="note"><b>Instructions:</b> Mark one result for every item. Record the issue or corrective action in Notes for each FAIL.</div>
     <div class="note"><b>Two-sided inspection:</b> Items marked with an asterisk (<span class="ts">*</span>) must be verified from both the front and rear sides of the module.</div>
@@ -454,6 +459,7 @@ const DATA = [
 ];
 
 const TOTAL=138;
+const WARN_AT=50;   /* machines stored before the app suggests backing up and clearing */
 const IDX="uis:v2:index";
 const MK=id=>"uis:v2:m:"+id;
 let idx=[], cur=null, filter="all", rfilter="all";
@@ -494,12 +500,13 @@ function writeProjects(){ return sSet(PK,JSON.stringify(projects)); }
 function getProject(name){ return projects.find(p=>p.name===name); }
 function projLabel(m){ return (m.proj?m.proj+"-":"")+"QA-"+m.no; }
 function safe(v){ return String(v||"").trim().replace(/[^\w-]/g,"_"); }
+function revEntry(m){ return (m.revs||[]).find(x=>x.n===(m.rev||1)); }
+function revFinished(m){ const r=revEntry(m); return !!(r&&r.finished); }
 function fileBase(m){
   const s=summarize(m);
-  const tag = s.done<TOTAL ? "INPROGRESS"      /* revision not finished yet */
-            : s.open>0     ? "OPEN"            /* all checked, failures still open */
-            : m.disp       ? "CLOSED"          /* all checked, nothing open, signed off */
-            : "INPROGRESS";                    /* all checked but no QC disposition yet */
+  const tag = !revFinished(m) ? "INPROGRESS"                    /* auditor still working */
+            : (s.done===TOTAL && s.open===0 && m.disp) ? "CLOSED"  /* nothing left, signed off */
+            : "OPEN";                                            /* finished, but points remain */
   return safe(m.proj||"NOPROJ")+"-QA-"+safe(m.no)+"-rev"+(m.rev||1)+"-"+tag;
 }
 
@@ -588,6 +595,11 @@ function renderRoster(){
   });
   document.getElementById("rEmpty").classList.toggle("hidden", idx.length>0);
   const scope=idx.filter(r=>!activeProj||(r.proj||"")===activeProj);
+  const q=document.getElementById("quota");
+  if(idx.length>=WARN_AT){
+    q.textContent=idx.length+" machines stored on this phone. Back them up and clear the phone to keep things tidy \u2014 the button is at the bottom.";
+    q.classList.remove("hidden");
+  } else q.classList.add("hidden");
   document.getElementById("fTotal").textContent=scope.length;
   document.getElementById("fDone").textContent=scope.filter(r=>r.status==="complete").length;
   document.getElementById("fOpen").textContent=scope.reduce((a,r)=>a+(r.open||0),0);
@@ -678,7 +690,7 @@ function tally(){
   document.getElementById("gFail").style.width=(s.f/TOTAL*100)+"%";
   const bl=document.getElementById("blocked");
   if(s.open>0){ bl.textContent=s.open+" point"+(s.open===1?"":"s")+" still open — mark them Solved to close this machine."; bl.classList.remove("hidden"); }
-  else if(s.done<TOTAL){ bl.textContent=(TOTAL-s.done)+" point"+(TOTAL-s.done===1?"":"s")+" not checked yet."; bl.classList.remove("hidden"); }
+  else if(s.done<TOTAL){ bl.textContent=(TOTAL-s.done)+" point"+(TOTAL-s.done===1?"":"s")+" not checked yet \u2014 finish the revision anyway if they cannot be reached."; bl.classList.remove("hidden"); }
   else bl.classList.add("hidden");
 }
 
@@ -700,10 +712,12 @@ function save(){
 /* ---------- open / close ---------- */
 function paintRev(){
   if(!cur) return;
-  const r=(cur.revs||[]).find(x=>x.n===cur.rev);
-  const started=r&&r.started?new Date(r.started).toLocaleDateString():"";
-  document.getElementById("revNow").textContent="Revision "+cur.rev+(started?" \u00b7 started "+started:"");
-  document.getElementById("revBtn").textContent="Start rev "+(cur.rev+1);
+  const r=revEntry(cur), done=revFinished(cur);
+  const stamp=d=>d?new Date(d).toLocaleDateString():"";
+  document.getElementById("revNow").textContent="Revision "+cur.rev+
+    (done ? " \u00b7 finished "+stamp(r.finished) : (r&&r.started?" \u00b7 started "+stamp(r.started):""));
+  document.getElementById("revBtn").textContent = done ? "Start rev "+(cur.rev+1) : "Finish rev "+cur.rev;
+  document.getElementById("reopenBtn").classList.toggle("hidden", !done);
   const p=getProject(cur.proj);
   const of=document.getElementById("openFolder");
   of.disabled = !(p&&p.url);
@@ -768,10 +782,32 @@ document.getElementById("dispPass").addEventListener("click",()=>{if(!cur)return
 document.getElementById("dispFail").addEventListener("click",()=>{if(!cur)return;cur.disp=cur.disp==="fail"?null:"fail";paintDisp();tally();save();});
 document.getElementById("revBtn").addEventListener("click",()=>{
   if(!cur) return;
-  const s=summarize(cur), pend=(TOTAL-s.done)+s.open;
-  if(!confirm("Start revision "+(cur.rev+1)+" of machine "+projLabel(cur)+"?\n\n"+
-    "Every mark and note is kept. "+pend+" point"+(pend===1?"":"s")+" will need attention: "+
-    (TOTAL-s.done)+" never checked, "+s.open+" failed and still open.\n\n"+
+  const s=summarize(cur), left=TOTAL-s.done;
+
+  if(!revFinished(cur)){                       /* ---- finish the current revision ---- */
+    let msg="Finish revision "+cur.rev+" of "+projLabel(cur)+"?\n\n";
+    if(left||s.open){
+      msg+="It will be recorded as finished with "+left+" point"+(left===1?"":"s")+" never checked and "+
+           s.open+" failure"+(s.open===1?"":"s")+" still open. Those carry into the next revision.\n\n";
+    } else if(!cur.disp){
+      msg+="All 138 points passed, but there is no QC disposition yet. Sign it off to get a CLOSED file.\n\n";
+    } else {
+      msg+="All 138 points passed and it is signed off \u2014 this machine closes.\n\n";
+    }
+    msg+="Do this when you leave the machine, then save the file and upload it.";
+    if(!confirm(msg)) return;
+    const r=revEntry(cur); if(r) r.finished=Date.now();
+    paintRev(); tally(); save();
+    document.getElementById("saveState").textContent=
+      "Revision "+cur.rev+" finished \u2014 the file is now "+fileBase(cur)+".json";
+    return;
+  }
+
+  /* ---- open the next revision ---- */
+  const pend=left+s.open;
+  if(!confirm("Start revision "+(cur.rev+1)+" of "+projLabel(cur)+"?\n\n"+
+    "Every mark and note is kept. "+pend+" point"+(pend===1?"":"s")+" need attention: "+
+    left+" never checked, "+s.open+" failed and still open.\n\n"+
     "The QC disposition and initials are cleared so this revision gets its own sign-off.")) return;
   cur.rev=(cur.rev||1)+1;
   cur.revs.push({n:cur.rev,started:Date.now()});
@@ -782,6 +818,14 @@ document.getElementById("revBtn").addEventListener("click",()=>{
   document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.filter==="todo"));
   applyFilter(); window.scrollTo(0,0);
 });
+
+document.getElementById("reopenBtn").addEventListener("click",()=>{
+  if(!cur||!revFinished(cur)) return;
+  if(!confirm("Reopen revision "+cur.rev+"? It goes back to in progress and the file returns to INPROGRESS.")) return;
+  const r=revEntry(cur); if(r) delete r.finished;
+  paintRev(); tally(); save();
+});
+
 document.getElementById("openFolder").addEventListener("click",()=>{
   const p=cur&&getProject(cur.proj); if(p&&p.url) window.open(p.url,"_blank","noopener");
 });
@@ -848,6 +892,27 @@ document.getElementById("expAll").addEventListener("click",()=>{
   const name=(activeProj?safe(activeProj):"ALL")+"-QA-backup.json";
   download(name,payload(all));
   payloadNote(name,"rSave",activeProj);
+});
+document.getElementById("clearAll").addEventListener("click",()=>{
+  const rows=idx.filter(r=>!activeProj||(r.proj||"")===activeProj);
+  if(!rows.length) return alert("There are no machines to clear.");
+  const label=activeProj||"all projects";
+  const name=(activeProj?safe(activeProj):"ALL")+"-QA-backup.json";
+  if(!confirm("Clear "+rows.length+" machine"+(rows.length===1?"":"s")+" of "+label+" from this phone?\n\n"+
+              "A backup ("+name+") downloads first. Upload it to OneDrive before you carry on \u2014 "+
+              "once cleared, that file is the only copy.")) return;
+
+  const all=rows.map(r=>readM(r.id)).filter(Boolean);
+  download(name,payload(all));
+
+  setTimeout(()=>{                       /* let the download start before wiping */
+    clearTimeout(t);
+    rows.forEach(r=>sDel(MK(r.id)));
+    idx=idx.filter(r=>!rows.some(x=>x.id===r.id));
+    writeIdx(); renderRoster();
+    document.getElementById("rSave").textContent=
+      rows.length+" machine"+(rows.length===1?"":"s")+" cleared. The backup is in Downloads: "+name;
+  },400);
 });
 document.getElementById("impFile").addEventListener("change",e=>{
   const f=e.target.files[0]; if(!f) return;
