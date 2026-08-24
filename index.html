@@ -213,10 +213,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
     <div class="tools">
       <button id="shareAll" class="primary">Send backup to OneDrive</button>
       <button id="expAll">Backup all machines</button>
-      <label>Restore backup<input id="impFile" type="file" accept=".json,application/json" hidden></label>
+      <label>Restore backup<input id="impFile" type="file" accept=".json,.txt,application/json,text/plain" hidden></label>
     </div>
     <p class="saveline" id="rSave"></p>
-    <p class="saveline">build 3</p>
+    <p class="saveline">build 4</p>
   </div>
 </div>
 
@@ -684,9 +684,12 @@ function tally(){
 let t=null; const saveNote=document.getElementById("saveState");
 function save(){
   clearTimeout(t);
+  const target=cur;                              /* the machine this edit belongs to */
   t=setTimeout(()=>{
-    cur.updated=Date.now();
-    const ok=writeM(cur); syncIdx(cur);
+    if(!target) return;                          /* user left the machine */
+    if(!idx.some(r=>r.id===target.id)) return;   /* deleted meanwhile: do not resurrect */
+    target.updated=Date.now();
+    const ok=writeM(target); syncIdx(target);
     saveNote.textContent= ok ? "Saved on this device "+new Date().toLocaleTimeString()
       : "NOT SAVED — storage is full or blocked. Export a backup now.";
   },350);
@@ -734,8 +737,7 @@ list.addEventListener("click",e=>{
   const want=btn.classList.contains("p")?"pass":"fail";
   r.r=(r.r===want)?null:want;
   if(r.r!=="fail"){r.note="";r.solved=false;r.closed="";}
-  paint(n); tally(); save();
-  if(filter!=="all") applyFilter();
+  paint(n); tally(); save();   /* the row stays put; re-tap the filter chip to refresh */
 });
 list.addEventListener("input",e=>{ if(e.target.tagName==="TEXTAREA"&&cur){ rec(e.target.closest(".item").dataset.n).note=e.target.value; save(); } });
 list.addEventListener("change",e=>{
@@ -744,7 +746,6 @@ list.addEventListener("change",e=>{
     r.solved=e.target.checked;
     r.closed=r.solved?new Date().toLocaleDateString():"";
     paint(el.dataset.n); tally(); save();
-    if(filter!=="all") applyFilter();
   }
 });
 document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener("click",()=>{
@@ -767,10 +768,11 @@ document.getElementById("revBtn").addEventListener("click",()=>{
   if(!confirm("Start revision "+(cur.rev+1)+" of machine "+projLabel(cur)+"?\n\n"+
     "Every mark and note is kept. "+pend+" point"+(pend===1?"":"s")+" will need attention: "+
     (TOTAL-s.done)+" never checked, "+s.open+" failed and still open.\n\n"+
-    "The QC disposition is cleared so this revision gets its own sign-off.")) return;
+    "The QC disposition and initials are cleared so this revision gets its own sign-off.")) return;
   cur.rev=(cur.rev||1)+1;
   cur.revs.push({n:cur.rev,started:Date.now()});
-  cur.disp=null;
+  cur.disp=null; cur.initials="";
+  document.getElementById("initials").value="";
   paintRev(); paintDisp(); tally(); save();
   filter="todo";
   document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.filter==="todo"));
@@ -808,7 +810,8 @@ document.getElementById("printBtn").addEventListener("click",()=>{
 });
 document.getElementById("delBtn").addEventListener("click",()=>{
   if(!cur) return;
-  if(!confirm("Delete machine "+cur.no+" and all of its marks? This cannot be undone.")) return;
+  if(!confirm("Delete machine "+projLabel(cur)+" and all of its marks? This cannot be undone.")) return;
+  clearTimeout(t);
   sDel(MK(cur.id));
   idx=idx.filter(r=>r.id!==cur.id); writeIdx(); closeMachine();
 });
